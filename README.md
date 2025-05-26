@@ -1,167 +1,173 @@
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import javax.swing.*;
-
 public class PequenasAcoes extends JPanel implements ActionListener, KeyListener {
+ private Timer temporizador;
+ private Timer temporizadorFinal;
+ private int posicaoX = 50, posicaoY = 300;
+ private int velocidadeX = 0, velocidadeY = 0;
+ private boolean estaNoChao = true;
+ private final int GRAVIDADE = 1;
+ private boolean jogoFinalizado = false;
+ private boolean tempoEsgotado = false;
+ private long tempoInicial;
+ private int tempoRestante;
+ private Rectangle plataforma1 = new Rectangle(300, 250, 200, 20);
+ private Rectangle plataforma2 = new Rectangle(600, 100, 150, 20);
+ private ArrayList<Rectangle> itensColetaveis = new ArrayList<>();
+ private Image imagemFundo;
+ private Image spritePersonagem;
+ private Image spriteItem;
+ public PequenasAcoes() {
+ JFrame janela = new JFrame("Jogo Plataforma 2D");
+ janela.setSize(800, 600);
+ janela.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+ janela.add(this);
 
-    private Timer temporizador;
-    private int posicaoX = 50, posicaoY = 300; // Posição inicial do personagem
-    private int velocidadeX = 0, velocidadeY = 0; // Velocidade do personagem
-    private boolean noChao = true; // Verifica se o personagem está no chão
-    private final int GRAVIDADE = 1;
+janela.setVisible(true);
+ janela.addKeyListener(this);
+ imagemFundo = new ImageIcon("fundo.png").getImage();
+ spritePersonagem = new ImageIcon("personagem.png").getImage();
+ spriteItem = new ImageIcon("item.png").getImage();
+ itensColetaveis.add(new Rectangle(100, 385, 15, 15));
+ itensColetaveis.add(new Rectangle(200, 385, 15, 15));
+ itensColetaveis.add(new Rectangle(400, 235, 15, 15));
+ itensColetaveis.add(new Rectangle(500, 385, 15, 15));
+ itensColetaveis.add(new Rectangle(650, 385, 15, 15));
+ itensColetaveis.add(new Rectangle(610, 85, 15, 15));
+ itensColetaveis.add(new Rectangle(690, 85, 15, 15));
+ tempoInicial = System.currentTimeMillis();
+ temporizador = new Timer(15, this);
+ temporizador.start();
+ temporizadorFinal = new Timer(10000, new ActionListener() {
+ @Override
+ public void actionPerformed(ActionEvent e) {
+ tempoEsgotado = true;
+ temporizador.stop();
+ temporizadorFinal.stop();
+ repaint();
+ }
+ });
+ temporizadorFinal.setRepeats(false);
+ temporizadorFinal.start();
+ }
+ @Override
 
-    private Rectangle plataforma1 = new Rectangle(300, 250, 200, 20); // Plataforma 1
-    private Rectangle plataforma2 = new Rectangle(600, 100, 150, 20); // Plataforma 2
-    private ArrayList<Rectangle> itens = new ArrayList<>(); // Lista de itens
-    private boolean fimDeJogo = false; // Controla o estado do jogo (fim ou não)
+public void paintComponent(Graphics g) {
+ super.paintComponent(g);
+ if (jogoFinalizado) {
+ g.setColor(PRETO);
+ g.fillRect(0, 0, getWidth(), getHeight());
+ g.setColor(BRANCO);
+ g.setFont(new Font("Arial", Font.BOLD, 30));
+ String mensagem = "Parabéns, você deixou o mundo mais limpo!";
+ FontMetrics fm = g.getFontMetrics();
+ int x = (getWidth() - fm.stringWidth(mensagem)) / 2;
+ int y = getHeight() / 2;
+ g.drawString(mensagem, x, y);
+ } else if (tempoEsgotado) {
+ g.setColor(PRETO);
+ g.fillRect(0, 0, getWidth(), getHeight());
+ g.setColor(VERMELHO);
+ g.setFont(new Font("Arial", Font.BOLD, 24));
+ String mensagem = "O lixo espalhado acarretou em uma cidade mais suja, que por 
+consequência gerou inúmeras doenças. GAME OVER :(";
+ FontMetrics fm = g.getFontMetrics();
+ int y = getHeight() / 2;
+ int x = (getWidth() - fm.stringWidth(mensagem)) / 2;
+ g.drawString(mensagem, x, y);
+ } else {
+ g.drawImage(imagemFundo, 0, 0, getWidth(), getHeight(), null);
+ g.setColor(CINZA);
+ g.fillRect(0, 400, getWidth(), 200);
 
-    public PequenasAcoes() {
-        JFrame frame = new JFrame("Jogo Plataforma 2D");
-        frame.setSize(800, 600);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(this);
-        frame.setVisible(true);
-        frame.addKeyListener(this);
+g.setColor(CINZA_ESCURO);
+ g.fillRect(plataforma1.x, plataforma1.y, plataforma1.width, plataforma1.height);
+ g.fillRect(plataforma2.x, plataforma2.y, plataforma2.width, plataforma2.height);
+ for (Rectangle item : itensColetaveis) {
+ g.drawImage(spriteItem, item.x, item.y, item.width, item.height, null);
+ }
+ g.drawImage(spritePersonagem, posicaoX, posicaoY, 50, 50, null);
+ g.setColor(PRETO);
+ g.setFont(new Font("Arial", Font.BOLD, 30));
+ String titulo = "Colete os Lixos";
+ FontMetrics fm = g.getFontMetrics();
+ g.drawString(titulo, (getWidth() - fm.stringWidth(titulo)) / 2, 50);
+ tempoRestante = 10 - (int)((System.currentTimeMillis() - tempoInicial) / 1000);
+ g.setFont(new Font("Arial", Font.BOLD, 20));
+ g.drawString("Tempo: " + tempoRestante + "s", getWidth() - 150, 30);
+ }
+ }
+ @Override
+ public void actionPerformed(ActionEvent evento) {
+ posicaoX += velocidadeX;
+ posicaoY += velocidadeY;
+ Rectangle personagem = new Rectangle(posicaoX, posicaoY, 50, 50);
+ velocidadeY += GRAVIDADE;
+ estaNoChao = false;
+ estaNoChao = verificaColisaoComPlataforma(personagem, plataforma1) ||
+ verificaColisaoComPlataforma(personagem, plataforma2);
 
-        // Itens no chão e na plataforma 1
-        itens.add(new Rectangle(100, 385, 15, 15));
-        itens.add(new Rectangle(200, 385, 15, 15));
-        itens.add(new Rectangle(400, 235, 15, 15)); // Em cima da plataforma 1
-        itens.add(new Rectangle(500, 385, 15, 15));
-        itens.add(new Rectangle(650, 385, 15, 15));
+if (posicaoY >= 350) {
+ posicaoY = 350;
+ velocidadeY = 0;
+ estaNoChao = true;
+ }
+ itensColetaveis.removeIf(personagem::intersects);
+ if (itensColetaveis.isEmpty()) {
+ jogoFinalizado = true;
+ temporizador.stop();
+ temporizadorFinal.stop();
+ }
+ repaint();
+ }
+ private boolean verificaColisaoComPlataforma(Rectangle personagem, Rectangle 
+plataforma) {
+ if (personagem.intersects(plataforma)) {
+ Rectangle intersecao = personagem.intersection(plataforma);
+ if (intersecao.height < intersecao.width &&
+ velocidadeY >= 0 &&
+ personagem.y + personagem.height <= plataforma.y + velocidadeY) {
+ posicaoY = plataforma.y - 50;
+ velocidadeY = 0;
+ return true;
+ }
+ }
+ return false;
+ }
+ @Override
 
-        // Novos itens em cima da plataforma 2 (superior direita)
-        itens.add(new Rectangle(610, 85, 15, 15)); // Esquerda da plataforma 2
-        itens.add(new Rectangle(690, 85, 15, 15)); // Centro da plataforma 2
+public void keyPressed(KeyEvent evento) {
+ int tecla = evento.getKeyCode();
+ if (tecla == KeyEvent.VK_LEFT) {
+ velocidadeX = -5;
+ } else if (tecla == KeyEvent.VK_RIGHT) {
+ velocidadeX = 5;
+ } else if (tecla == KeyEvent.VK_SPACE && estaNoChao) {
+ velocidadeY = -20;
+ estaNoChao = false;
+ }
+ }
+ @Override
+ public void keyReleased(KeyEvent evento) {
+ int tecla = evento.getKeyCode();
+ if (tecla == KeyEvent.VK_LEFT || tecla == KeyEvent.VK_RIGHT) {
+ velocidadeX = 0;
+ }
+ }
+ @Override
+ public void keyTyped(KeyEvent evento) {
+ }
+ public static void main(String[] args) {
+ new PequenasAcoes();
+ }
+ private static final Color PRETO = Color.BLACK;
+ private static final Color BRANCO = Color.WHITE;
+ private static final Color VERMELHO = Color.RED;
+ private static final Color VERDE = Color.GREEN;
+ private static final Color CIANO = Color.CYAN;
+ private static final Color CINZA = Color.GRAY;
 
-        temporizador = new Timer(15, this); // Atualiza a tela a cada 15ms
-        temporizador.start();
-    }
-
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
-        // Se o jogo terminou, exibe a tela preta com a mensagem
-        if (fimDeJogo) {
-            g.setColor(Color.BLACK);
-            g.fillRect(0, 0, getWidth(), getHeight()); // Tela preta
-
-            // Mensagem centralizada
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 30)); // Fonte da mensagem
-            String mensagem = "Parabéns, você deixou o mundo mais limpo!";
-            FontMetrics metrics = g.getFontMetrics();
-            int mensagemX = (getWidth() - metrics.stringWidth(mensagem)) / 2;
-            int mensagemY = getHeight() / 2; // Centraliza verticalmente
-            g.drawString(mensagem, mensagemX, mensagemY);
-        } else {
-            // Fundo do jogo
-            g.setColor(Color.CYAN);
-            g.fillRect(0, 0, getWidth(), getHeight());
-
-            // Chão
-            g.setColor(Color.GREEN);
-            g.fillRect(0, 400, getWidth(), 200);
-
-            // Plataforma 1 (meio)
-            g.setColor(Color.DARK_GRAY);
-            g.fillRect(plataforma1.x, plataforma1.y, plataforma1.width, plataforma1.height);
-
-            // Plataforma 2 (superior direita)
-            g.fillRect(plataforma2.x, plataforma2.y, plataforma2.width, plataforma2.height);
-
-            // Itens coletáveis
-            g.setColor(Color.BLACK);
-            for (Rectangle item : itens) {
-                g.fillRect(item.x, item.y, item.width, item.height);
-            }
-
-            // Personagem (quadrado vermelho)
-            g.setColor(Color.RED);
-            g.fillRect(posicaoX, posicaoY, 50, 50);
-
-            // Título: "Colete os Lixos"
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 30)); // Fonte do título
-            String titulo = "Colete os Lixos";
-            FontMetrics metrics = g.getFontMetrics();
-            int tituloX = (getWidth() - metrics.stringWidth(titulo)) / 2;
-            int tituloY = 50;
-            g.drawString(titulo, tituloX, tituloY); // Desenha o título na tela
-        }
-    }
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        posicaoX += velocidadeX;
-        posicaoY += velocidadeY;
-
-        Rectangle personagem = new Rectangle(posicaoX, posicaoY, 50, 50);
-
-        // Gravidade
-        velocidadeY += GRAVIDADE;
-        noChao = false;
-
-        // Colisão com plataformas
-        noChao = verificaColisaoComPlataforma(personagem, plataforma1) || verificaColisaoComPlataforma(personagem, plataforma2);
-
-        // Colisão com o chão
-        if (posicaoY >= 350) {
-            posicaoY = 350;
-            velocidadeY = 0;
-            noChao = true;
-        }
-
-        // Coleta de itens (se o personagem intersectar os itens)
-        itens.removeIf(personagem::intersects);
-
-        // Verifica se todos os itens foram coletados
-        if (itens.isEmpty()) {
-            fimDeJogo = true; // Ativa o fim de jogo
-        }
-
-        repaint();
-    }
-
-    private boolean verificaColisaoComPlataforma(Rectangle personagem, Rectangle plataforma) {
-        if (personagem.intersects(plataforma)) {
-            Rectangle intersecao = personagem.intersection(plataforma);
-            if (intersecao.height < intersecao.width && velocidadeY >= 0 && personagem.y + personagem.height <= plataforma.y + velocidadeY) {
-                posicaoY = plataforma.y - 50;
-                velocidadeY = 0;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        int tecla = e.getKeyCode();
-        if (tecla == KeyEvent.VK_LEFT) {
-            velocidadeX = -5; // Move para a esquerda
-        } else if (tecla == KeyEvent.VK_RIGHT) {
-            velocidadeX = 5; // Move para a direita
-        } else if (tecla == KeyEvent.VK_SPACE && noChao) {
-            velocidadeY = -20; // Pulo
-            noChao = false;
-        }
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-        int tecla = e.getKeyCode();
-        if (tecla == KeyEvent.VK_LEFT || tecla == KeyEvent.VK_RIGHT) {
-            velocidadeX = 0; // Para de mover o personagem horizontalmente
-        }
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {}
-
-    public static void main(String[] args) {
-        new PequenasAcoes();
-    }
+private static final Color CINZA_ESCURO = Color.DARK_GRAY;
 }
