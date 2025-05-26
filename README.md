@@ -190,7 +190,6 @@ public class PequenasAcoes extends JPanel implements ActionListener, KeyListener
 
     @Override
     public void keyTyped(KeyEvent evento) {
-        // Não utilizado
     }
 
     public static void main(String[] args) {
